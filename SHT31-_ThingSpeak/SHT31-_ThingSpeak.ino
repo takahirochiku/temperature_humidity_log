@@ -18,6 +18,9 @@ WiFiClient client;
 // SHT31のアドレスを設定
 AE_SHT31 SHT31 = AE_SHT31(0x45, SDA, SCL);
 
+// Vcc電圧を読み込めるように設定
+ADC_MODE(ADC_VCC);
+
 // ThingSpeak設定
 const unsigned long myChannelNumber = 363115;
 const char * myWriteAPIKey = "S9HFEY0EFHEVZ5V4";
@@ -28,7 +31,7 @@ void setup()
   delay(100);
 
   Serial.println("");
-  Serial.println("SHT31 + Ambient Test");
+  Serial.println("SHT31 + ThingSpeak Test");
 
   pinMode(LED, OUTPUT);
 
@@ -57,11 +60,13 @@ void setup()
 
 void loop()
 {
-  float temperature, humidity;
+  float temperature, humidity,vcc;
   // SHT31から温湿度データを取得
   SHT31.GetTempHum();
   temperature = SHT31.Temperature();
   humidity = SHT31.Humidity();
+  // Vcc取得
+  vcc = ESP.getVcc() / 1000.;
   
   digitalWrite(LED, HIGH);
   digitalWrite(LED, LOW);
@@ -72,16 +77,20 @@ void loop()
  //フィードに値を設定
   ThingSpeak.setField(1, temperature);
   ThingSpeak.setField(2, humidity);
+  ThingSpeak.setField(3, vcc);
 
  //ThingSpeakに送信
   Serial.println();
   Serial.print("Write fields...");
+  Serial.println("");
   ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
   Serial.print("temperature: ");
   Serial.print(temperature);
-  Serial.print(" DegC,  humidity: ");
+  Serial.print("DegC,  humidity: ");
   Serial.print(humidity);
   Serial.println(" %");
+  Serial.print(vcc);
+  Serial.println(" vcc");
   Serial.println("done");
 
   delay(PERIOD * 1000);
